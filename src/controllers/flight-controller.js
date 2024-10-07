@@ -72,10 +72,27 @@ const createFlight = async (req, res) => {
   }
 };
 
+const modifyAvailableSeatsCount = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    let data = await FlightService.modifyAvailableSeatsCount(id, req.body);
+    SuccessResponse.data = data;
+    return res.status(StatusCodes.OK).json(SuccessResponse);
+  } catch (error) {
+    ErrorResponse.error = {
+      explanation: error.explanation,
+      details: error.details,
+    };
+    return res.status(error.statusCode).json(ErrorResponse);
+  }
+};
+
 module.exports = {
   getFlight,
   getFlights,
   updateFlight,
   deleteFlight,
   createFlight,
+  modifyAvailableSeatsCount
 };
