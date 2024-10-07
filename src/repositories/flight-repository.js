@@ -2,6 +2,7 @@ const CRUDRepository = require("./crud-repository");
 const { Flight, Airplane, Airport, Sequelize } = require("../models");
 const AppError = require("../utils/errors/app-error");
 const { StatusCodes } = require("http-status-codes");
+const { flightBookingEnums } = require("../utils/common/enums");
 
 class FlightRepository extends CRUDRepository {
   constructor() {
@@ -67,12 +68,51 @@ class FlightRepository extends CRUDRepository {
     });
   }
 
-  updateFlight(data) {
-    return this.updateResource(data);
+  async updateFlight(data) {
+    return await this.updateResource(data);
   }
 
-  deleteFlight(id) {
-    return this.deleteResource(id);
+  async deleteFlight(id) {
+    return await this.deleteResource(id);
+  }
+
+  async modifyAvailableSeatsCount(id, data, transaction) {
+    const [DECREMENT_ACTION, INCREMENT_ACTION] = flightBookingEnums;
+
+    const flight = await Flight.findByPk(id);
+    if (!flight) {
+      throw new AppError("Flight not found", StatusCodes.NOT_FOUND);
+    }
+
+    if (data.action == DECREMENT_ACTION) {
+      if (flight.totalSeats - data.noOfSeats < 0) {
+        throw new AppError(
+          "No available seats to decrement",
+          StatusCodes.BAD_REQUEST,
+          null,
+          [
+            "Number of seats that you are trying to book is more than the available seats",
+          ]
+        );
+      }
+      await flight.decrement("totalSeats", {
+        where: { id },
+        by: data.noOfSeats,
+        transaction,
+      });
+    } else if (data.action == INCREMENT_ACTION) {
+      await flight.increment("totalSeats", {
+        where: { id },
+        by: data.noOfSeats,
+        transaction,
+      });
+    } else {
+      throw new AppError("Invalid action type", StatusCodes.BAD_REQUEST, null, [
+        `${data.action} is an invalid action in request body`,
+      ]);
+    }
+
+    return `${data.action} action successful.`;
   }
 }
 module.exports = FlightRepository;
