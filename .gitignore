@@ -1,3 +1,4 @@
+# add some igonores
 node_modules/
 .env
 combined.log
