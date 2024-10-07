@@ -3,6 +3,8 @@ const { StatusCodes } = require("http-status-codes");
 const { FlightRepository } = require("../repositories");
 const AppError = require("../utils/errors/app-error");
 const { isValidISODate } = require("../utils/common/dateTime");
+const db = require("../models");
+const { sequelize } = require("../models");
 
 const parseCustomDate = (dateString) => {
   const day = dateString.slice(0, 2);
@@ -116,10 +118,33 @@ const createFlight = async (data) => {
   return createdFlight;
 };
 
+
+const modifyAvailableSeatsCount = async (id, data) => {
+  const t = await sequelize.transaction();
+  try {
+    const res = await new FlightRepository().modifyAvailableSeatsCount(
+      id,
+      data
+    );
+    await t.commit();
+    return res;
+  } catch (error) {
+    await t.rollback();
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      "something went wrong while updating the seat count",
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      null,
+      []
+    );
+  }
+};
+
 module.exports = {
   getFlight,
   getFlights,
   updateFlight,
   deleteFlight,
   createFlight,
+  modifyAvailableSeatsCount
 };
