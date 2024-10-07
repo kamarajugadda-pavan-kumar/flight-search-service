@@ -11,6 +11,12 @@ router.put("/flight", FlightController.updateFlight);
 
 router.delete("/flight/:id", FlightController.deleteFlight);
 
+router.patch(
+  "/flight/:id",
+  [FlightMiddleware.validateModifyAvailableSeatsCount],
+  FlightController.modifyAvailableSeatsCount
+);
+
 router.post(
   "/flight",
   [FlightMiddleware.validateCreateRequest],
