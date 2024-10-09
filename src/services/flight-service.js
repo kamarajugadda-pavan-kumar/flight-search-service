@@ -118,13 +118,13 @@ const createFlight = async (data) => {
   return createdFlight;
 };
 
-
 const modifyAvailableSeatsCount = async (id, data) => {
   const t = await sequelize.transaction();
   try {
     const res = await new FlightRepository().modifyAvailableSeatsCount(
       id,
-      data
+      data,
+      t
     );
     await t.commit();
     return res;
@@ -146,5 +146,5 @@ module.exports = {
   updateFlight,
   deleteFlight,
   createFlight,
-  modifyAvailableSeatsCount
+  modifyAvailableSeatsCount,
 };

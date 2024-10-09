@@ -79,7 +79,10 @@ class FlightRepository extends CRUDRepository {
   async modifyAvailableSeatsCount(id, data, transaction) {
     const [DECREMENT_ACTION, INCREMENT_ACTION] = flightBookingEnums;
 
-    const flight = await Flight.findByPk(id);
+    const flight = await Flight.findByPk(id, {
+      transaction: transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
     if (!flight) {
       throw new AppError("Flight not found", StatusCodes.NOT_FOUND);
     }
