@@ -44,7 +44,23 @@ class FlightRepository extends CRUDRepository {
   }
 
   async getFlight(id) {
-    return await this.getResource(id);
+    // return await this.getResource(id);
+    return await Flight.findByPk(id, {
+      include: [
+        {
+          model: Airplane,
+          as: "airplane",
+        },
+        {
+          model: Airport,
+          as: "departureAirport",
+        },
+        {
+          model: Airport,
+          as: "arrivalAirport",
+        },
+      ],
+    });
   }
 
   async getFlights(customFilter, sortOptions) {
