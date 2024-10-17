@@ -64,24 +64,28 @@ class FlightRepository extends CRUDRepository {
   }
 
   async getFlights(customFilter, sortOptions) {
-    return await Flight.findAll({
-      where: customFilter,
-      order: sortOptions,
-      include: [
-        {
-          model: Airplane,
-          as: "airplane",
-        },
-        {
-          model: Airport,
-          as: "departureAirport",
-        },
-        {
-          model: Airport,
-          as: "arrivalAirport",
-        },
-      ],
-    });
+    try {
+      return await Flight.findAll({
+        where: customFilter,
+        order: sortOptions,
+        include: [
+          {
+            model: Airplane,
+            as: "airplane",
+          },
+          {
+            model: Airport,
+            as: "departureAirport",
+          },
+          {
+            model: Airport,
+            as: "arrivalAirport",
+          },
+        ],
+      });
+    } catch (error) {
+      throw new AppError("RepositoryError", StatusCodes.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async updateFlight(data) {

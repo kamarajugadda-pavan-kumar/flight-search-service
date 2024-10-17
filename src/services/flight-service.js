@@ -2,18 +2,9 @@ const { Op } = require("sequelize");
 const { StatusCodes } = require("http-status-codes");
 const { FlightRepository } = require("../repositories");
 const AppError = require("../utils/errors/app-error");
-const { isValidISODate } = require("../utils/common/dateTime");
+const { isValidISODate, parseCustomDate } = require("../utils/common/dateTime");
 const db = require("../models");
 const { sequelize } = require("../models");
-
-const parseCustomDate = (dateString) => {
-  const day = dateString.slice(0, 2);
-  const month = dateString.slice(2, 4);
-  const year = dateString.slice(4, 8);
-
-  // Construct date in YYYY-MM-DD format
-  return `${year}-${month}-${day}`;
-};
 
 const getFlight = async (id) => {
   const flight = await new FlightRepository().getFlight(id);
@@ -21,65 +12,73 @@ const getFlight = async (id) => {
 };
 
 const getFlights = async (query) => {
-  const { trips, price, sort, travellers } = query;
-  const customFilter = {};
+  try {
+    const { trips, price, sort, travellers } = query;
+    const customFilter = {};
 
-  if (trips) {
-    const [onwardDetails, returnDetails] = trips.split(",");
-    if (onwardDetails) {
-      const [start, dest, date] = onwardDetails.split("-");
-      customFilter.departureAirportId = start;
-      customFilter.arrivalAirportId = dest;
-      customFilter.departureTime = {
-        [Op.gte]: new Date(parseCustomDate(date)),
-      };
-    }
-    if (returnDetails) {
-      const [start, dest, date] = returnDetails.split("-");
-      customFilter.returnFlight = {
-        departureAirportId: start,
-        arrivalAirportId: dest,
-        departureTime: {
+    if (trips) {
+      const [onwardDetails, returnDetails] = trips.split(",");
+      if (onwardDetails) {
+        const [start, dest, date] = onwardDetails.split("-");
+        customFilter.departureAirportId = start;
+        customFilter.arrivalAirportId = dest;
+        customFilter.departureTime = {
           [Op.gte]: new Date(parseCustomDate(date)),
-        },
-      };
-    }
-  }
-
-  if (price) {
-    const [minPrice, maxPrice] = price.split("-");
-    customFilter.price = {
-      [Op.between]: [minPrice || 0, maxPrice || Number.MAX_SAFE_INTEGER],
-    };
-  }
-
-  const sortOptions = [];
-  if (sort) {
-    const sortFilters = sort.split(",");
-    for (let filter of sortFilters) {
-      if (filter === "price_asc") {
-        sortOptions.push(["price", "ASC"]);
-      } else if (filter === "price_desc") {
-        sortOptions.push(["price", "DESC"]);
-      } else if (filter === "departureTime_asc") {
-        sortOptions.push(["departureTime", "ASC"]);
-      } else if (filter === "departureTime_desc") {
-        sortOptions.push(["departureTime", "DESC"]);
+        };
+      }
+      if (returnDetails) {
+        const [start, dest, date] = returnDetails.split("-");
+        customFilter.returnFlight = {
+          departureAirportId: start,
+          arrivalAirportId: dest,
+          departureTime: {
+            [Op.gte]: new Date(parseCustomDate(date)),
+          },
+        };
       }
     }
-  }
 
-  if (travellers) {
-    customFilter.totalSeats = {
-      [Op.gte]: Number(travellers),
-    };
-  }
+    if (price) {
+      const [minPrice, maxPrice] = price.split("-");
+      customFilter.price = {
+        [Op.between]: [minPrice || 0, maxPrice || Number.MAX_SAFE_INTEGER],
+      };
+    }
 
-  const flights = await new FlightRepository().getFlights(
-    customFilter,
-    sortOptions
-  );
-  return flights;
+    const sortOptions = [];
+    if (sort) {
+      const sortFilters = sort.split(",");
+      for (let filter of sortFilters) {
+        if (filter === "price_asc") {
+          sortOptions.push(["price", "ASC"]);
+        } else if (filter === "price_desc") {
+          sortOptions.push(["price", "DESC"]);
+        } else if (filter === "departureTime_asc") {
+          sortOptions.push(["departureTime", "ASC"]);
+        } else if (filter === "departureTime_desc") {
+          sortOptions.push(["departureTime", "DESC"]);
+        }
+      }
+    }
+
+    if (travellers) {
+      customFilter.totalSeats = {
+        [Op.gte]: Number(travellers),
+      };
+    }
+
+    const flights = await new FlightRepository().getFlights(
+      customFilter,
+      sortOptions
+    );
+    return flights;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      "Failed to fetch flights",
+      StatusCodes.INTERNAL_SERVER_ERROR
+    );
+  }
 };
 
 const updateFlight = async (data) => {
@@ -93,29 +92,38 @@ const deleteFlight = async (id) => {
 };
 
 const createFlight = async (data) => {
-  const { arrivalTime, departureTime } = data;
-  // check if the arrival and departure times are in valid format
-  if (!isValidISODate(arrivalTime) || !isValidISODate(departureTime)) {
+  try {
+    const { arrivalTime, departureTime } = data;
+    // check if the arrival and departure times are in valid format
+    if (!isValidISODate(arrivalTime) || !isValidISODate(departureTime)) {
+      throw new AppError(
+        "Invalid arrival and departure time format.",
+        StatusCodes.BAD_REQUEST,
+        null,
+        [
+          "arrivalTime and departureTime should be in YYYY-MM-DDTHH:mm:ssZ format",
+        ]
+      );
+    }
+
+    // check if the departure time is before the arrival time
+    if (new Date(departureTime) > new Date(arrivalTime)) {
+      throw new AppError(
+        "Departure time cannot be after arrival time",
+        StatusCodes.BAD_REQUEST,
+        null,
+        []
+      );
+    }
+
+    const createdFlight = await new FlightRepository().createFlight(data);
+    return createdFlight;
+  } catch (error) {
     throw new AppError(
-      "Invalid arrival and departure time format.",
-      StatusCodes.BAD_REQUEST,
-      null,
-      ["arrivalTime and departureTime should be in YYYY-MM-DDTHH:mm:ssZ format"]
+      "Failed to create flight",
+      StatusCodes.INTERNAL_SERVER_ERROR
     );
   }
-
-  // check if the departure time is before the arrival time
-  if (new Date(departureTime) > new Date(arrivalTime)) {
-    throw new AppError(
-      "Departure time cannot be after arrival time",
-      StatusCodes.BAD_REQUEST,
-      null,
-      []
-    );
-  }
-
-  const createdFlight = await new FlightRepository().createFlight(data);
-  return createdFlight;
 };
 
 const modifyAvailableSeatsCount = async (id, data) => {

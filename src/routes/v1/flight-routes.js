@@ -5,7 +5,11 @@ const { FlightMiddleware } = require("../../middlewares");
 
 router.get("/flight/:id", FlightController.getFlight);
 
-router.get("/flights", FlightController.getFlights);
+router.get(
+  "/flights",
+  [FlightMiddleware.validateFlightSearch],
+  FlightController.getFlights
+);
 
 router.put("/flight", FlightController.updateFlight);
 
