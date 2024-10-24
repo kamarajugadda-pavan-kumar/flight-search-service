@@ -6,9 +6,9 @@ module.exports = {
 
     // Define seat distribution for different airplane types
     const airplanes = [
-      { id: 5, name: "Airbus A320", capacity: 180 },
-      { id: 6, name: "Boeing 737", capacity: 160 },
-      { id: 7, name: "Airbus A321", capacity: 190 },
+      { id: 5, name: "Airbus A320", capacity: 10 }, // Updated capacity
+      { id: 6, name: "Boeing 737", capacity: 12 }, // Updated capacity
+      { id: 7, name: "Airbus A321", capacity: 15 }, // Updated capacity
     ];
 
     // Logic to distribute seats (business, economy, etc.)
@@ -22,7 +22,7 @@ module.exports = {
 
       let row = 1;
       for (let i = 0; i < businessClassRows; i++) {
-        for (let col = 1; col <= 6; col++) {
+        for (let col = 1; col <= 3; col++) {
           seats.push({
             row,
             col: String.fromCharCode(64 + col), // Converts 1 -> A, 2 -> B, etc.
@@ -36,7 +36,7 @@ module.exports = {
       }
 
       for (let i = 0; i < premiumEconomyRows; i++) {
-        for (let col = 1; col <= 6; col++) {
+        for (let col = 1; col <= 3; col++) {
           seats.push({
             row,
             col: String.fromCharCode(64 + col),
@@ -50,7 +50,7 @@ module.exports = {
       }
 
       for (let i = 0; i < firstClassRows; i++) {
-        for (let col = 1; col <= 4; col++) {
+        for (let col = 1; col <= 3; col++) {
           // first-class typically has fewer seats per row
           seats.push({
             row,
@@ -65,7 +65,7 @@ module.exports = {
       }
 
       for (let i = 0; i < economyRows; i++) {
-        for (let col = 1; col <= 6; col++) {
+        for (let col = 1; col <= 3; col++) {
           seats.push({
             row,
             col: String.fromCharCode(64 + col),
