@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-search-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flight-search-service
+  template:
+    metadata:
+      labels:
+        app: flight-search-service
+    spec:
+      containers:
+        - name: flight-search-service
+          image: pavankd12/flight-search-service:latest
+          envFrom:
+            - secretRef:
+                name: flight-search-service-secrets
+            - configMapRef:
+                name: flight-search-service-config
+          ports:
+            - containerPort: 50001
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
