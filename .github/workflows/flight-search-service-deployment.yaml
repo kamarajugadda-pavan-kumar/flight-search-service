@@ -60,3 +60,4 @@ jobs:
         run: |
           kubectl apply -f k8s/flight-search-service-config.yaml
           kubectl apply -f k8s/flight-search-service-deployment.yaml
+          kubectl apply -f k8s/flight-search-service.yaml

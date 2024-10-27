@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flight-search-service
+  labels:
+    app: flight-search-service
+spec:
+  selector:
+    app: flight-search-service # Matches the app label in your deployment
+  ports:
+    - protocol: TCP
+      port: 50001 # The port on the Service
+      targetPort: 50001 # The port on your container
+  type: ClusterIP # Only accessible within the cluster
